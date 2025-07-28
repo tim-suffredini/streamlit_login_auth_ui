@@ -1,12 +1,10 @@
 import re
 import json
-from trycourier import Courier
 import secrets
-from argon2 import PasswordHasher
 import requests
 
 
-ph = PasswordHasher() 
+ph = None
 
 def check_usr_pass(username: str, password: str) -> bool:
     """
@@ -107,7 +105,7 @@ def check_unique_usr(username_sign_up: str):
 
     if username_sign_up in authorized_user_data_master:
         return False
-    
+
     non_empty_check = non_empty_str_check(username_sign_up)
 
     if non_empty_check == False:
@@ -139,11 +137,11 @@ def check_username_exists(user_name: str) -> bool:
 
         for user in authorized_users_data:
             authorized_user_data_master.append(user['username'])
-        
+
     if user_name in authorized_user_data_master:
         return True
     return False
-        
+
 
 def check_email_exists(email_forgot_passwd: str):
     """
@@ -166,28 +164,6 @@ def generate_random_passwd() -> str:
     return secrets.token_urlsafe(password_length)
 
 
-def send_passwd_in_email(auth_token: str, username_forgot_passwd: str, email_forgot_passwd: str, company_name: str, random_password: str) -> None:
-    """
-    Triggers an email to the user containing the randomly generated password.
-    """
-    client = Courier(auth_token = auth_token)
-
-    resp = client.send_message(
-    message={
-        "to": {
-        "email": email_forgot_passwd
-        },
-        "content": {
-        "title": company_name + ": Login Password!",
-        "body": "Hi! " + username_forgot_passwd + "," + "\n" + "\n" + "Your temporary login password is: " + random_password  + "\n" + "\n" + "{{info}}"
-        },
-        "data":{
-        "info": "Please reset your password at the earliest for security reasons."
-        }
-    }
-    )
-
-
 def change_passwd(email_: str, random_password: str) -> None:
     """
     Replaces the old password with the newly generated password.
@@ -200,11 +176,11 @@ def change_passwd(email_: str, random_password: str) -> None:
             if user['email'] == email_:
                 user['password'] = ph.hash(random_password)
         json.dump(authorized_users_data, auth_json_)
-    
+
 
 def check_current_passwd(email_reset_passwd: str, current_passwd: str) -> bool:
     """
-    Authenticates the password entered against the username when 
+    Authenticates the password entered against the username when
     resetting the password.
     """
     with open("_secret_auth_.json", "r") as auth_json:
